@@ -1,0 +1,10 @@
+{
+  "name": "com.raiden.utils",
+  "displayName": "Utils",
+  "version": "1.0.0",
+  "unity": "6000.3",
+  "description": "Stuff shared between my games.",
+  "author": {
+    "name": "Raidenxd2"
+  }
+}
