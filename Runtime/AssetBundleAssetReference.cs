@@ -47,7 +47,11 @@ namespace raiden.utils
         {
             if (Asset != null)
             {
+#if UNITY_6000_3_OR_NEWER
+                BundleName = AssetDatabase.GetImplicitAssetBundleName(AssetDatabase.GetAssetPath(Asset.GetEntityId()));
+#else
                 BundleName = AssetDatabase.GetImplicitAssetBundleName(AssetDatabase.GetAssetPath(Asset.GetInstanceID()));
+#endif
                 AssetName = Asset.name;
                 IsDirty = true;
             }

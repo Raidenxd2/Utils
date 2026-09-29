@@ -486,7 +486,6 @@ public class BuildManager : EditorWindow
         
         return first;
     }
-    
 
     private static void LoadBms()
     {
