@@ -9,7 +9,6 @@ namespace raiden.utils
         public static void Init()
         {
             WindowsNative.DisableProcessWindowGhosting();
-            WindowsNative.DMMain();
         }
 #endif
     }
