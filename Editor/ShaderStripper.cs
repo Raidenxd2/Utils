@@ -64,6 +64,20 @@ public class ShaderStripper : IPreprocessShaders
             }
         }
         
+        // Strips passes in sss.PassesToStrip
+        foreach (var sPass in sss.PassesToStrip)
+        {
+            if (snippet.passName.StartsWith(sPass))
+            {
+                if (sss.DebugMode)
+                {
+                    Debug.Log("(Shader Stripper) Stripping pass " + snippet.passName + " of shader " + shader.name);
+                }
+                
+                data.Clear();
+            }
+        }
+        
         // Strips keywords in sss.ShaderKeywordNames
         foreach (ShaderKeyword item in m_KeywordsToStrip)
         {
@@ -79,6 +93,55 @@ public class ShaderStripper : IPreprocessShaders
                     data.RemoveAt(i);
                     --i;
                 }
+            }
+        }
+        
+        // Strips keywords and passesspecified for shaders in sss.Shaders
+        foreach (var sssshader in sss.Shaders)
+        {
+            if (shader.name.StartsWith(sssshader.ShaderName))
+            {
+                List<ShaderKeyword> keywords = new();
+                
+                foreach (var keyword in sssshader.ShaderKeywordNames)
+                {
+                    keywords.Add(new(keyword));
+                }
+
+                foreach (ShaderKeyword item in keywords)
+                {
+                    for (int i = 0; i < data.Count; i++)
+                    {
+                        if (data[i].shaderKeywordSet.IsEnabled(item))
+                        {
+                            if (sss.DebugMode)
+                            {
+                                Debug.Log("(Shader Stripper) Stripping keyword " + item.name + " of shader " + shader.name);
+                            }
+                    
+                            data.RemoveAt(i);
+                            --i;
+                        }
+                    }
+                }
+
+                if (sssshader.PassesToStrip.Count > 0)
+                {
+                    foreach (var sPass in sssshader.PassesToStrip)
+                    {
+                        if (snippet.passName.StartsWith(sPass))
+                        {
+                            if (sss.DebugMode)
+                            {
+                                Debug.Log("(Shader Stripper) Stripping pass " + snippet.passName + " of shader " + shader.name);
+                            }
+                
+                            data.Clear();
+                        }
+                    }
+                }
+
+                break;
             }
         }
     }

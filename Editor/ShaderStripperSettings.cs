@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,4 +10,14 @@ public class ShaderStripperSettings : ScriptableObject
     
     public List<string> ShaderKeywordNames;
     public List<string> ShadersToStrip;
+    public List<string> PassesToStrip;
+    public List<ShaderStripperShader> Shaders;
+}
+
+[Serializable]
+public class ShaderStripperShader
+{
+    public string ShaderName;
+    public List<string> ShaderKeywordNames;
+    public List<string> PassesToStrip;
 }
