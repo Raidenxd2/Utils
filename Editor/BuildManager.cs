@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
+
 #if BUILDMANAGER_ADDRESSABLES
 using UnityEditor.AddressableAssets.Settings;
 #endif
@@ -45,7 +47,7 @@ public class BuildManager : EditorWindow
         bms.RemoveManifestFilesFromAssetBundleBuild = GUILayout.Toggle(bms.RemoveManifestFilesFromAssetBundleBuild, "Remove manifest files from AssetBundle build");
         bms.BuildAddressables = GUILayout.Toggle(bms.BuildAddressables, "Build Addressables");
         bms.CopyPDBFiles = GUILayout.Toggle(bms.CopyPDBFiles, "Copy PDB files (Mono Windows, Linux and macOS only)");
-        bms.RemoveBurstDebugInformation = GUILayout.Toggle(bms.RemoveBurstDebugInformation, "Remove BurstDebugInformation");
+        bms.RemoveBurstDebugInformation = GUILayout.Toggle(bms.RemoveBurstDebugInformation, "Remove BurstDebugInformation (Windows and Linux only)");
         bms.IncrementBuildNumber = GUILayout.Toggle(bms.IncrementBuildNumber, "Increment Build Number");
         bms.AddGitCommitHashToVersion = GUILayout.Toggle(bms.AddGitCommitHashToVersion, "Add Git commit hash to version");
         bms.AddVersionToBuildFolder = GUILayout.Toggle(bms.AddVersionToBuildFolder, "Add version to build folder");
@@ -146,22 +148,22 @@ public class BuildManager : EditorWindow
 #if UNITY_STANDALONE_WIN && UNITY_6000_0_OR_NEWER
         if (winArm64)
         {
-            UnityEditor.WindowsStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.ARM64;
+            UnityEditor.WindowsStandalone.UserBuildSettings.architecture = OSArchitecture.ARM64;
         }
         else if (bt == BuildTarget.StandaloneWindows64)
         {
-            UnityEditor.WindowsStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.x64;
+            UnityEditor.WindowsStandalone.UserBuildSettings.architecture = OSArchitecture.x64;
         }
         else if (bt == BuildTarget.StandaloneWindows)
         {
-            UnityEditor.WindowsStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.x86;
+            UnityEditor.WindowsStandalone.UserBuildSettings.architecture = OSArchitecture.x86;
         }
 #endif
 
 #if UNITY_STANDALONE_OSX
         if (bt == BuildTarget.StandaloneOSX)
         {
-            UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.x64ARM64;
+            UnityEditor.OSXStandalone.UserBuildSettings.architecture = OSArchitecture.x64ARM64;
         }
 #endif
 
@@ -235,7 +237,7 @@ public class BuildManager : EditorWindow
                 exeName = BuildPath + "/" + bms.ExeName + ".exe";
                 break;
             case BuildTarget.StandaloneOSX:
-                exeName = BuildPath + "/" + bms.ExeName + ".app";
+                exeName = BuildPath + "/" + Application.productName + ".app";
                 break;
             case BuildTarget.StandaloneLinux64:
                 exeName = BuildPath + "/" + bms.ExeName + ".x86_64";
@@ -303,7 +305,7 @@ public class BuildManager : EditorWindow
             }
         }
 
-        // Delete BurstDebugInformation if its enabled
+        // Delete BurstDebugInformation if its enabled for Windows and Linux
         if (bms.RemoveBurstDebugInformation)
         {
             if (bt == BuildTarget.StandaloneWindows || bt == BuildTarget.StandaloneWindows64 || bt == BuildTarget.StandaloneLinux64)
@@ -311,42 +313,6 @@ public class BuildManager : EditorWindow
                 if (Directory.Exists(BuildPath + "/" + PlayerSettings.productName + "_BurstDebugInformation_DoNotShip"))
                 {
                     Directory.Delete(BuildPath + "/" + PlayerSettings.productName + "_BurstDebugInformation_DoNotShip", true);
-                }
-            }
-        }
-
-        // Copy files from Assets/CopyToStreamingAssets only for Windows, Linux, and macOS
-        if (bt == BuildTarget.StandaloneWindows || bt == BuildTarget.StandaloneWindows64 || bt == BuildTarget.StandaloneLinux64 || bt == BuildTarget.StandaloneOSX)
-        {
-            if (Directory.Exists("Assets/CopyToStreamingAssets"))
-            {
-                DirectoryInfo boDir2 = new("Assets/CopyToStreamingAssets");
-                FileInfo[] boInfo2 = boDir2.GetFiles("*.*");
-
-                foreach (FileInfo file in boInfo2)
-                {
-                    if (file.Extension == ".meta")
-                    {
-                        
-                    }
-                    else
-                    {
-                        string targetPath = "";
-                        
-                        if (bt == BuildTarget.StandaloneOSX)
-                        {
-                            targetPath = BuildPath + "/" + bms.ExeName + ".app/Contents/Resources/Data/StreamingAssets/" + Path.GetFileName(file.Name);
-                        }
-                        else
-                        {
-                            targetPath = BuildPath + "/" + bms.ExeName + "_Data/StreamingAssets/" + Path.GetFileName(file.Name);
-                        }
-                        
-                        if (!File.Exists(targetPath))
-                        {
-                            File.Copy("Assets/CopyToStreamingAssets/" + file.Name, BuildPath + "/" + bms.ExeName + "_Data/StreamingAssets/" + Path.GetFileName(file.Name));
-                        }
-                    }
                 }
             }
         }
@@ -370,7 +336,7 @@ public class BuildManager : EditorWindow
                         {
                             if (bt == BuildTarget.StandaloneOSX)
                             {
-                                File.Copy("Library/Bee/PlayerScriptAssemblies/" + file.Name, BuildPath + "/" + bms.ExeName + ".app/Contents/Resources/Data/Managed/" + Path.GetFileName(file.Name), true);
+                                File.Copy("Library/Bee/PlayerScriptAssemblies/" + file.Name, BuildPath + "/" + Application.productName + ".app/Contents/Resources/Data/Managed/" + Path.GetFileName(file.Name), true);
                             }
                             else
                             {
@@ -490,5 +456,16 @@ public class BuildManager : EditorWindow
     private static void LoadBms()
     {
         bms = AssetDatabase.LoadAssetAtPath<BuildManagerSettings>("Assets/BuildManagerSettings.asset");
+    }
+}
+
+public class BuildManager_BuildPlayerProcessor : BuildPlayerProcessor
+{
+    public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
+    {
+        if (buildPlayerContext.BuildPlayerOptions.targetGroup == BuildTargetGroup.Standalone)
+        {
+            buildPlayerContext.AddAdditionalPathToStreamingAssets("Assets/CopyToStreamingAssets");
+        }
     }
 }
